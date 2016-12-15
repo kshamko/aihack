@@ -16,6 +16,8 @@ def clean_text(text):
     x = x.replace('_', '')
     x = x.replace('?', '')
     x = x.replace('!', '')
+    x = x.replace('(', '')
+    x = x.replace(')', '')
     return x.lower()
 
 def crap_count(text):
