@@ -35,7 +35,7 @@ def clean_text(text):
     x = x.replace('-', '')
     x = x.replace(',', '')
     x = x.replace('"', '')
-    x = x.replace("'", '')
+    #x = x.replace("'", '')
     x = x.replace('_', '')
     x = x.replace('?', '')
     x = x.replace('!', '')
@@ -84,7 +84,7 @@ def get_training_set() :
                 author_vec.append(author)
                 author_vec1.append(int(row[4]))
 
-    vectorizer = CountVectorizer(min_df=25, stop_words = get_stop_words('en'))
+    vectorizer = CountVectorizer(min_df=5);#, stop_words = get_stop_words('en'))
     #vectorizer = TfidfVectorizer(stop_words = get_stop_words('en'))
     vec = vectorizer.fit_transform(corpus)
 
@@ -97,7 +97,7 @@ def get_training_set() :
 def set_pybrain_nn(X, y):
 
     params_len = len(X[0])
-    hidden_size = 150
+    hidden_size = 50
     output_layer_num = 2
     epochs = 50
 

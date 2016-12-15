@@ -25,8 +25,14 @@ def main() :
     vectorizer, X, y, y1 = lib.get_training_set()
     vec = vectorizer.transform(text)
 
+    print("NN Predictions")
     clf = lib.get_neural_net()
     print(clf.score(vec.toarray(), author_vec1))
+    i = 0
+    for x in vec.toarray():
+        pred = clf.predict([x])
+        print(pred, author_vec1[i], title[i])
+        i += 1
 
     print("SVM Predictions")
     clf1 = lib.get_svm()
