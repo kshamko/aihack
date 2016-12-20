@@ -17,36 +17,31 @@ from math import sqrt
 
 from stop_words import get_stop_words
 from nltk.stem.snowball import EnglishStemmer
+from sklearn.metrics import f1_score
+from sklearn.model_selection import cross_val_score
+
+from sklearn.model_selection import validation_curve
 
 #
 #
 #
-def clean_text(text):
+def clean_text(text, stemmer = None):
 
-    stemmer = EnglishStemmer()
+    #stemmer = EnglishStemmer()
+    text = text.replace("||", ' ').lower()
 
-    x = text
-    x = x.replace('\n', '')
-    x = x.replace("||", ' ')
-    x = x.replace('\t', '')
-    x = x.replace('\r', '')
-    x = x.replace(',', '')
-    x = x.replace('.', '')
-    x = x.replace('-', '')
-    x = x.replace(',', '')
-    x = x.replace('"', '')
-    x = x.replace("'ve", '')
-    x = x.replace("'ll", '')
-    #x = x.replace("'", '')
-    x = x.replace('_', '')
-    x = x.replace('?', '')
-    x = x.replace('!', '')
-    x = x.replace('(', '')
-    x = x.replace(')', '')
-    x = x.lower()
-    x = x.replace('yoko', '')
-    x1 = ' '.join(stemmer.stem(w) for w in x.split(' '))
-    return x1
+    items_to_remove = ['\n', '\t', '\r', ',', '.', '-', ',',
+        '"', "'ve", "'ll", '_', '?', '!', '(', ')', 'yoko',
+    ]
+
+    for item in items_to_remove:
+        text = text.replace(item, '')
+
+
+    if stemmer is not None:
+        text = ' '.join(stemmer.stem(w) for w in text.split(' '))
+
+    return text
 
 
 #
@@ -69,61 +64,26 @@ def file_get_contents(filename, use_include_path = 0, context = None, offset = -
 def get_training_set() :
 
     csv_file = 'data/dataset_final.csv'
-    corpus = []
-    corpus_j = []
-    corpus_p = []
-    author_vec = []
-    author_vec1 = []
-
-    with open(csv_file) as csvfile:
-        reader = csv.reader(csvfile, delimiter=";")
-
-        for row in reader:
-            if row[0] != 'title':
-                corpus.append(clean_text(row[1]))
-
-                author = [0, 1]
-                if int(row[4]) == 1:
-                    corpus_j.append(clean_text(row[1]))
-                    author = [1, 0]
-                else:
-                    corpus_p.append(clean_text(row[1]))
-
-                author_vec.append(author)
-                author_vec1.append(int(row[4]))
-
-    #vectorizer = CountVectorizer(min_df=1)#, stop_words = get_stop_words('en'))
-    #vec = vectorizer.fit_transform(corpus_j)
-
-    #i = 0
-    #j_dict = []
-    #for n in  np.asarray(vec.sum(axis=0)).ravel():
-    #    if n > 10:
-    #        j_dict.append(vectorizer.get_feature_names()[i])
-    #    i += 1
-
-    #print(j_dict)
-
-    #vectorizer = CountVectorizer(min_df=1)#, stop_words = get_stop_words('en'))
-    #vec = vectorizer.fit_transform(corpus_p)
-
-    #i = 0
-    #p_dict = []
-    #for n in  np.asarray(vec.sum(axis=0)).ravel():
-    #    if n > 10:
-    #        p_dict.append(vectorizer.get_feature_names()[i])
-    #    i += 1
-
-    #print(p_dict)
-
-    #d = list(set(j_dict + p_dict))
-    #d.sort()
+    corpus, author_vec, author_vec1 = _iterate_dataset_file(csv_file)
 
     vectorizer = TfidfVectorizer(min_df=1)
     vec = vectorizer.fit_transform(corpus)
     return vectorizer, vec.toarray(), author_vec, author_vec1
 
+#
+#
+#
+def get_test_set() :
+    csv_file = 'data/dataset_test.csv'
+    text, author_vec, author_vec1 = _iterate_dataset_file(csv_file, 2)
+    vectorizer, X, y, y1 = get_training_set()
+    vec = vectorizer.transform(text)
 
+    return vec.toarray(), author_vec, author_vec1
+
+#
+#
+#
 def set_pybrain_nn(X, y):
 
     params_len = len(X[0])
@@ -193,21 +153,36 @@ def set_pybrain_nn(X, y):
 #
 #
 #
-def set_neural_net(X, y):
-    #clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-   # clf.fit(X, y)
-    clf = MLPClassifier(hidden_layer_sizes=(100,100), random_state=1, warm_start=True)
+def set_neural_net(X, y, Xv, yv):
+    clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(100,100), random_state=1, warm_start=True)
     clf.fit(X, y)
-
+    print(clf.score(Xv, yv))
     pickle.dump(clf, open('model/nn', 'wb'))
 
 #
 #
 #
-def set_svm(X, y):
-    clf = svm.SVC(C=1, gamma=10, kernel='linear')
-    clf.fit(np.array(X), np.array(y))
-    pickle.dump(clf, open('model/svm', 'wb'))
+def set_svm(X, y, Xv, yv):
+
+    C = [1, 5, 15, 20, 30, 100, 1000]
+    gamma = [0.001, 0.01, 0.1, 1]
+    for c in C:
+    	for g in gamma:
+            print('\nC: %f, gamma: %f' % (c, g))
+            clf = svm.SVC(C=c, gamma=g, kernel='linear')
+            clf.fit(X, y)
+
+            print (clf.score(Xv, yv))
+            print (cross_val_score(clf, X, y, scoring='f1'))
+            #print (clf.get_params().keys())
+
+            train_scores, valid_scores = validation_curve(clf, X, y, "gamma", np.logspace(-7, 3, 3))
+
+            print (train_scores)
+            print(valid_scores)
+            pickle.dump(clf, open('model/svm_'+str(c)+'_'+str(g), 'wb'))
+
+
 
 #
 #
@@ -226,3 +201,32 @@ def get_pybrain_nn():
 #
 def get_svm():
     return  pickle.load(open('model/svm', 'rb'))
+
+#
+#
+#
+def _iterate_dataset_file(file, author_index = 4):
+    corpus = []
+    corpus_j = []
+    corpus_p = []
+    author_vec = []
+    author_vec1 = []
+
+    with open(file) as csvfile:
+        reader = csv.reader(csvfile, delimiter=";")
+
+        for row in reader:
+            if row[0] != 'title':
+                corpus.append(clean_text(row[1]))
+
+                author = [0, 1]
+                if int(row[author_index]) == 1:
+                    corpus_j.append(clean_text(row[1]))
+                    author = [1, 0]
+                else:
+                    corpus_p.append(clean_text(row[1]))
+
+                author_vec.append(author)
+                author_vec1.append(int(row[author_index]))
+
+    return corpus, author_vec, author_vec1
