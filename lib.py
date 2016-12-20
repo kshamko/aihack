@@ -12,7 +12,7 @@ from pybrain.structure import FeedForwardNetwork, LinearLayer, SigmoidLayer, Ful
 
 import csv
 import pickle
-
+from sklearn import preprocessing
 from math import sqrt
 
 from stop_words import get_stop_words
@@ -35,6 +35,8 @@ def clean_text(text):
     x = x.replace('-', '')
     x = x.replace(',', '')
     x = x.replace('"', '')
+    x = x.replace("'ve", '')
+    x = x.replace("'ll", '')
     #x = x.replace("'", '')
     x = x.replace('_', '')
     x = x.replace('?', '')
@@ -42,6 +44,7 @@ def clean_text(text):
     x = x.replace('(', '')
     x = x.replace(')', '')
     x = x.lower()
+    x = x.replace('yoko', '')
     x1 = ' '.join(stemmer.stem(w) for w in x.split(' '))
     return x1
 
@@ -67,6 +70,8 @@ def get_training_set() :
 
     csv_file = 'data/dataset_final.csv'
     corpus = []
+    corpus_j = []
+    corpus_p = []
     author_vec = []
     author_vec1 = []
 
@@ -79,27 +84,54 @@ def get_training_set() :
 
                 author = [0, 1]
                 if int(row[4]) == 1:
+                    corpus_j.append(clean_text(row[1]))
                     author = [1, 0]
+                else:
+                    corpus_p.append(clean_text(row[1]))
 
                 author_vec.append(author)
                 author_vec1.append(int(row[4]))
 
-    vectorizer = CountVectorizer(min_df=5);#, stop_words = get_stop_words('en'))
-    #vectorizer = TfidfVectorizer(stop_words = get_stop_words('en'))
+    #vectorizer = CountVectorizer(min_df=1)#, stop_words = get_stop_words('en'))
+    #vec = vectorizer.fit_transform(corpus_j)
+
+    #i = 0
+    #j_dict = []
+    #for n in  np.asarray(vec.sum(axis=0)).ravel():
+    #    if n > 10:
+    #        j_dict.append(vectorizer.get_feature_names()[i])
+    #    i += 1
+
+    #print(j_dict)
+
+    #vectorizer = CountVectorizer(min_df=1)#, stop_words = get_stop_words('en'))
+    #vec = vectorizer.fit_transform(corpus_p)
+
+    #i = 0
+    #p_dict = []
+    #for n in  np.asarray(vec.sum(axis=0)).ravel():
+    #    if n > 10:
+    #        p_dict.append(vectorizer.get_feature_names()[i])
+    #    i += 1
+
+    #print(p_dict)
+
+    #d = list(set(j_dict + p_dict))
+    #d.sort()
+
+    vectorizer = TfidfVectorizer(min_df=1)
     vec = vectorizer.fit_transform(corpus)
-
-    print (vec.shape)
-    #print (vectorizer.get_feature_names())
-
     return vectorizer, vec.toarray(), author_vec, author_vec1
 
 
 def set_pybrain_nn(X, y):
 
     params_len = len(X[0])
-    hidden_size = 50
+
+    print(params_len)
+    hidden_size = 100
     output_layer_num = 2
-    epochs = 50
+    epochs = 200
 
     # init and train
     net = FeedForwardNetwork()
@@ -148,13 +180,13 @@ def set_pybrain_nn(X, y):
 
     print("training for {} epochs...".format(epochs))
 
-    trainer.trainUntilConvergence(verbose=True)
-    trainer.train()
+    #trainer.trainUntilConvergence(verbose=True)
+    #trainer.train()
 
-    #for i in range(epochs):
-    #    mse = trainer.train()
-    #    rmse = sqrt(mse)
-    #    print("training RMSE, epoch {}: {}".format(i + 1, rmse))
+    for i in range(epochs):
+        mse = trainer.train()
+        rmse = sqrt(mse)
+        print("training RMSE, epoch {}: {}".format(i + 1, rmse))
 
     pickle.dump(net, open('model/nn_brain', 'wb'))
 
@@ -164,7 +196,7 @@ def set_pybrain_nn(X, y):
 def set_neural_net(X, y):
     #clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
    # clf.fit(X, y)
-    clf = MLPClassifier(hidden_layer_sizes=(100,2), random_state=1, warm_start=True)
+    clf = MLPClassifier(hidden_layer_sizes=(100,100), random_state=1, warm_start=True)
     clf.fit(X, y)
 
     pickle.dump(clf, open('model/nn', 'wb'))

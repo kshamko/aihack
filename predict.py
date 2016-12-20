@@ -1,5 +1,6 @@
 import lib
 import csv
+from sklearn import preprocessing
 
 def main() :
     #text = lib.file_get_contents('test/walrus.txt')
@@ -25,6 +26,8 @@ def main() :
     vectorizer, X, y, y1 = lib.get_training_set()
     vec = vectorizer.transform(text)
 
+   # vec = preprocessing.scale(vec.toarray)
+
     print("NN Predictions")
     clf = lib.get_neural_net()
     print(clf.score(vec.toarray(), author_vec1))
@@ -48,7 +51,7 @@ def main() :
     clf2 = lib.get_pybrain_nn()
     i = 0;
     for x in vec.toarray():
-        pred = clf2.activate(x)
+        pred = clf2.activate( preprocessing.scale(x))
         print(pred, int(not bool(max(enumerate(pred), key=lambda x: x[1])[0])), author_vec1[i], title[i])
         i += 1
 
