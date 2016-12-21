@@ -64,9 +64,9 @@ def file_get_contents(filename, use_include_path = 0, context = None, offset = -
 def get_training_set() :
 
     csv_file = 'data/dataset_final.csv'
-    corpus, author_vec, author_vec1 = _iterate_dataset_file(csv_file)
+    corpus, author_vec, author_vec1, title = _iterate_dataset_file(csv_file)
 
-    vectorizer = TfidfVectorizer(min_df=1)
+    vectorizer = CountVectorizer()#TfidfVectorizer(min_df=1)
     vec = vectorizer.fit_transform(corpus)
     return vectorizer, vec.toarray(), author_vec, author_vec1
 
@@ -75,11 +75,11 @@ def get_training_set() :
 #
 def get_test_set() :
     csv_file = 'data/dataset_test.csv'
-    text, author_vec, author_vec1 = _iterate_dataset_file(csv_file, 2)
+    text, author_vec, author_vec1, title = _iterate_dataset_file(csv_file, 2)
     vectorizer, X, y, y1 = get_training_set()
     vec = vectorizer.transform(text)
 
-    return vec.toarray(), author_vec, author_vec1
+    return vec.toarray(), author_vec, author_vec1, title
 
 #
 #
@@ -164,25 +164,17 @@ def set_neural_net(X, y, Xv, yv):
 #
 def set_svm(X, y, Xv, yv):
 
+    X = preprocessing.scale(X)
+
     C = [1, 5, 15, 20, 30, 100, 1000]
     gamma = [0.001, 0.01, 0.1, 1]
     for c in C:
     	for g in gamma:
             print('\nC: %f, gamma: %f' % (c, g))
-            clf = svm.SVC(C=c, gamma=g, kernel='linear')
+            clf = svm.SVC(C=c, gamma=g)#, kernel='linear')
             clf.fit(X, y)
-
             print (clf.score(Xv, yv))
-            print (cross_val_score(clf, X, y, scoring='f1'))
-            #print (clf.get_params().keys())
-
-            train_scores, valid_scores = validation_curve(clf, X, y, "gamma", np.logspace(-7, 3, 3))
-
-            print (train_scores)
-            print(valid_scores)
             pickle.dump(clf, open('model/svm_'+str(c)+'_'+str(g), 'wb'))
-
-
 
 #
 #
@@ -200,7 +192,7 @@ def get_pybrain_nn():
 #
 #
 def get_svm():
-    return  pickle.load(open('model/svm', 'rb'))
+    return  pickle.load(open('model/svm_5_0.001', 'rb'))
 
 #
 #
@@ -211,6 +203,7 @@ def _iterate_dataset_file(file, author_index = 4):
     corpus_p = []
     author_vec = []
     author_vec1 = []
+    title = []
 
     with open(file) as csvfile:
         reader = csv.reader(csvfile, delimiter=";")
@@ -218,6 +211,7 @@ def _iterate_dataset_file(file, author_index = 4):
         for row in reader:
             if row[0] != 'title':
                 corpus.append(clean_text(row[1]))
+                title.append(row[0])
 
                 author = [0, 1]
                 if int(row[author_index]) == 1:
@@ -229,4 +223,4 @@ def _iterate_dataset_file(file, author_index = 4):
                 author_vec.append(author)
                 author_vec1.append(int(row[author_index]))
 
-    return corpus, author_vec, author_vec1
+    return corpus, author_vec, author_vec1, title
