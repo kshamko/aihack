@@ -5,8 +5,8 @@ from sklearn.metrics import f1_score
 
 def main() :
 
-    #X, y, y1, title = lib.get_test_set()
-    v, X, y, y1 = lib.get_training_set()
+    X, y, y1, title = lib.get_test_set()
+
     print("SVM Predictions")
     clf = lib.get_svm()
     print(clf.score(X, y1))
@@ -15,7 +15,7 @@ def main() :
     for x in X:
         [pred] = clf.predict([x])
         p.append(pred)
-        print(pred, y1[i])#, title[i])
+        print(pred, y1[i], title[i])
         i += 1
 
     print("F1: ", f1_score(y1, p))
