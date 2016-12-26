@@ -11,6 +11,7 @@ def hello():
     text = ""
     author = None
     prob = None
+    des = 0
 
     if request.method == 'POST':
         text = request.form['text']
