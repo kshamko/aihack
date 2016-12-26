@@ -14,13 +14,19 @@ def main() :
     p = []
     for x in X:
         [pred] = clf.predict([x])
+        #proba = clf.classes_, clf.predict_proba([x])#clf.predict_proba([x])
+        [des] = clf.decision_function([x])
         p.append(pred)
-        print(pred, y1[i], title[i])
+
+
+
+        print(pred, y1[i], des, (50 + abs(des)*100), title[i])
         i += 1
 
-    print("F1: ", f1_score(y1, p))
-    print("Recall: ", recall_score(y1, p))
-    print("Precision: ", precision_score(y1, p, labels=['p','j']))
+
+    #print("F1: ", f1_score(y1, p))
+    #print("Recall: ", recall_score(y1, p))
+    #print("Precision: ", precision_score(y1, p, labels=['p','j']))
     return
 
 

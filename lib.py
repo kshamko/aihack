@@ -47,6 +47,8 @@ def clean_text(text, stemmer = None):
     for item in items_to_remove:
         text = text.replace(item, '')
 
+    text = text.replace('i ', 'iii ')
+    text = text.replace(' i ', ' iii ')
 
     if stemmer is not None:
         text = ' '.join(stemmer.stem(w) for w in text.split(' '))
@@ -61,7 +63,6 @@ def get_training_set() :
 
     csv_file = 'data/dataset_final.csv'
     corpus, author_vec, author_vec1, title = _iterate_dataset_file(csv_file)
-
     vectorizer = CountVectorizer()#TfidfVectorizer(min_df=1)
     vec = vectorizer.fit_transform(corpus)
     return vectorizer, vec.toarray(), author_vec, author_vec1
@@ -98,17 +99,16 @@ def set_svm(X, y, Xv, yv):
     for c in C:
     	for g in gamma:
             print('\nC: %f, gamma: %f' % (c, g))
-            clf = svm.SVC(C=c, gamma=g)#, kernel='linear')
+            clf = svm.SVC(C=c, gamma=g)#, probability=True)#, kernel='linear')
             for n in range(10, 202, 10):
                 clf.fit(X[:n], y[:n])
-
                 samples_count.append(len(X[:n]))
                 score_test.append(clf.score(Xv, yv))
                 score_train.append(clf.score(X[:n], y[:n]))
 
-
-            print(score_test, score_train)
+            #print(score_test, score_train)
             plot_curves(score_train, score_test, samples_count)
+            clf.fit(X, y)
             pickle.dump(clf, open('model/svm_'+str(c)+'_'+str(g), 'wb'))
 
 
@@ -174,14 +174,19 @@ def _iterate_dataset_file(file, author_index = 4):
                 title.append(row[0])
 
                 author = [0, 1]
+                a = 0
                 if int(row[author_index]) == 1:
                     corpus_j.append(clean_text(row[1]))
                     author = [1, 0]
+                    a = 1
                 else:
                     corpus_p.append(clean_text(row[1]))
+                    a = 0
+
 
                 author_vec.append(author)
-                author_vec1.append(int(row[author_index]))
+                #author_vec1.append(int(row[author_index]))
+                author_vec1.append(a)
 
     return corpus, author_vec, author_vec1, title
 

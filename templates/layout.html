@@ -47,10 +47,19 @@
       <div class="starter-template">
 
         {% if author == [1] %}
-          <div class="alert alert-success" role="alert">Seems that was John</div>
+          <div class="alert alert-success" role="alert">Seems that was John ({{prob_des}}%)</div>
         {% elif author == [0] %}
-          <div class="alert alert-success" role="alert">Sounds like Paul</div>
+          <div class="alert alert-success" role="alert">Sounds like Paul ({{prob_des}}%)</div>
         {% endif %}
+
+        {#% if prob.any()  %}
+
+          Probability Estimation:
+          <ul>
+            <li>John: {{prob[1]}}</li>
+            <li>Paul: {{prob[0]}}</li>
+          </ul>
+        {% endif %#}
 
         <div class="row">
 
